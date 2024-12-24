@@ -68,6 +68,10 @@ By incorporating **granular authorization**, the protocol aims to keep user asse
 
 The generic architecture can be summarized as follows:
 
+<p align="center">
+    <img height="800px" src="./assets/architecture.png">
+</p>
+
 - **Core Mappings**  
   - `principalAgentAuthorizations[principal][agent][functionHash]`: Tracks usage limits, time bounds, etc.  
   - `registeredPrincipalOfAgent[agent]`: Tracks which **principal** (if any) the **agent** is currently acting for.  
