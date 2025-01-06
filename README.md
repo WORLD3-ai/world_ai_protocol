@@ -1,138 +1,204 @@
-# WORLD3’s WORLD AI Protocol – Core Design
-A flexible on-chain delegation framework that allows **principals** to securely and granularly authorize **agents** (e.g., AI agent or service accounts) to perform specific actions on their behalf.
+# WORLD3’s AI Protocol – Core Design
+
+A flexible on-chain delegation framework that allows **principals** to securely and granularly authorize **agents** (e.g., AI agents or service accounts) to perform specific actions on their behalf—on **any** blockchain platform.
 
 ---
 
-## **Overview**
+## Table of Contents
+1. [Overview](#overview)  
+2. [Key Features](#key-features)  
+3. [High-Level Workflow](#high-level-workflow)  
+4. [Protocol Architecture](#protocol-architecture)  
+5. [Compare to Account Abstraction (AA)](#compare-to-account-abstraction-aa)  
+6. [Future Roadmap](#future-roadmap)  
+7. [Conclusion](#conclusion)
 
-Many decentralized applications (**dApps**) require that users (the **principals**) delegate specific tasks—such as in-game actions, yield-farming steps, or other repeated functions—to external **agents**. The **WORLD3’s WORLD AI Protocol** manages this delegation securely by:
+---
 
-- Restricting **agent** permissions to specific function signatures  
+## Overview
+Many decentralized applications (**dApps**) require that users (the **principals**) delegate specific tasks—such as in-game actions, yield-farming steps, or routine administrative functions—to external **agents**. The **WORLD3’s AI Protocol** manages this delegation securely by:
+
+- Restricting **agent** permissions to specific function selectors  
 - Defining **time-bound** and usage-limited delegations  
+- Requiring **agent** consent via a signature  
 - Allowing **principals** to revoke delegated permissions at any time  
 
-By incorporating **granular authorization**, the protocol aims to keep user assets and game states secure while enabling AI-driven or automated account interactions.
+By incorporating **granular authorization**, the protocol keeps user assets and game states secure while enabling AI-driven or automated account interactions.
 
 ---
 
-## **Key Features**
+## Key Features
 
 1. **Function-Level Permissions**  
-   Grant or revoke access per function signature, giving the **principal** full control over what an **agent** can do.
+   - Grant or revoke access per function selector.  
+   - Each **agent** can be authorized for multiple function signatures, tracked in an array.
 
-2. **Time-Bound Access**  
-   Authorizations can have start and end timestamps for limited-duration operations.
+2. **Single Principal per Agent**  
+   - Each **agent** can be tied to exactly one **principal** at a time.  
+   - If an **agent** is already bound to a different **principal**, the new authorization will be rejected.
 
-3. **Usage Allowance**  
-   A credit-like system to limit how many times an **agent** can invoke an authorized function.
+3. **Time-Bound Access**  
+   - Authorizations can have start/end timestamps.  
+   - If either value is zero, it means “no restriction” on that boundary.
 
-4. **Automatic De-Authorization**  
-   When an **agent**’s usage allowance runs out or the time window expires, the protocol automatically revokes authorization.
+4. **Usage Allowance**  
+   - Limits how many times an **agent** can invoke an authorized function.  
+   - Decrements automatically on each call.
 
-5. **Easy Revocation**  
-   **Principals** can revoke an **agent**’s authorization at any time—no questions asked.
+5. **Automatic De-Authorization**  
+   - When `allowedCalls` reaches zero, that specific function authorization is removed.  
+   - If no authorized functions remain for an **agent**, the **agent**→**principal** association is cleared.
 
-6. **Event Logging**  
-   Emitted events facilitate real-time tracking of who got authorized or revoked and for which functions.
+6. **Easy Revocation & Updates**  
+   - **Principals** can revoke an **agent**’s authorization for a function at any time.  
+   - Partial updates (e.g., adjusting usage limits or time bounds) are possible without re-authorizing from scratch.
 
-7. **Extensible & Chain-Agnostic**  
-   The design can be adapted to multiple blockchains such as Ethereum, SUI, Solana, NEAR, etc.
+7. **Agent Consent via Signature**  
+   - The protocol requires a valid **agent** signature for authorization, ensuring **agent** awareness and consent.
+
+8. **Batch Authorizations**  
+   - Multiple authorizations can be created or updated in a single transaction, enhancing efficiency for large-scale changes.
+
+9. **Chain-Agnostic**  
+   - While the reference is in Solidity (EVM), the core logic can be adapted to Solana, Sui, NEAR, etc.
+
+10. **Event Logging**  
+    - `AgentAuthorized`, `AgentAuthorizationUpdated`, and `AgentRevoked` provide real-time auditing of all changes.
 
 ---
 
-## **High-Level Workflow**
+## High-Level Workflow
 
 1. **Principal Authorizes Agent**  
-   - The **principal** calls an authorization function, providing:  
-     - The **agent**’s address  
-     - The function hash (e.g., `keccak256("myFunction(uint,uint)")`)  
-     - **Time bounds** (start/end)  
-     - **Usage allowance** (e.g., 10 calls)
+   - **Principal** calls the authorization function, passing:  
+     - The **agent** address  
+     - The target **function selector** (e.g., `keccak256("myFunction(uint,uint)")`)  
+     - **Time bounds** (`_startTime`, `_endTime`)  
+     - **Usage allowance** (`_allowedCalls`)  
+     - The **agent**’s **signature** for consent
 
 2. **Data Recorded**  
-   - The protocol records these details in mappings keyed by `principal → agent → functionSignature`.
+   - An `AgentAuthorizationData` struct is stored for `(principal, agent, functionSelector)`.  
+   - If the **agent** is unassigned, `agentToPrincipal[agent] = principal`.
 
 3. **Agent Calls a Protected Function**  
-   - A modifier checks whether the caller (**agent**) is still validly authorized (e.g., usage allowance > 0, time within range).
+   - A modifier checks that:  
+     - **Agent** is registered with **principal**  
+     - Current time is within `[startTime, endTime]`  
+     - `allowedCalls` > 0  
+   - If valid, the call proceeds; otherwise, it reverts with an error.
 
-4. **Usage Decrement & Potential Auto-Revoke**  
-   - Each successful call consumes one usage allowance.  
-   - If usage allowance hits zero, authorization automatically ends.
+4. **Automatic Usage Decrement**  
+   - Each successful call decrements `allowedCalls`.  
+   - If `allowedCalls` becomes 0, that function’s authorization is automatically removed.
 
-5. **Revocation**  
-   - The **principal** can manually revoke an **agent** at any point, removing that **agent**’s ability to call the function.
+5. **Revocation / Removal**  
+   - **Principal** can revoke authorization for a given function at any time.  
+   - If no functions remain for the **agent**, the protocol clears the **agent**→**principal** link.
+
+6. **Updates**  
+   - **Principal** can update start/end times or `allowedCalls` without removing the **agent**.  
+   - An **AgentAuthorizationUpdated** event is emitted.
+
+7. **Batch Operations**  
+   - A single transaction can create or update multiple authorizations via `batchAuthorizeAgent`.
 
 ---
 
-## **Protocol Architecture**
+## Protocol Architecture
 
-The generic architecture can be summarized as follows:
+TThe generic architecture can be summarized as follows:
 
 <p align="center">
     <img height="800px" src="./assets/architecture.png">
 </p>
 
-- **Core Mappings**  
-  - `principalAgentAuthorizations[principal][agent][functionHash]`: Tracks usage limits, time bounds, etc.  
-  - `registeredPrincipalOfAgent[agent]`: Tracks which **principal** (if any) the **agent** is currently acting for.  
-  - `permittedFunctionSignatures[principal][agent]`: An array of function hashes authorized for a specific **agent**.
 
-- **Data Struct: AgentAuthorizationData**  
-  - **authorizationStart**: Block timestamp from which the **agent** can invoke a function  
-  - **authorizationEnd**: Block timestamp after which the **agent** can no longer invoke the function  
-  - **usageAllowance**: How many times the **agent** can successfully call the function  
-  - **hashArrayIndex**: An index to help manage function hashes in the `permittedFunctionSignatures` array
+### Core Mappings & Structs
 
-- **Modifiers / Check Functions**  
-  - `onlyRegisteredAgent(functionSignature)` checks if `msg.sender` is an authorized **agent**, if **time constraints** are valid, and if **usageAllowance** is still > 0.
 
-- **Events**  
-  - `AgentAuthorized(principal, agent, functionHash)`  
-  - `AgentRevoked(principal, agent, functionHash)`
+- **`principalToAgentAuthorizations[principal][agent][functionSelector]`**  
+  Stores `AgentAuthorizationData` (includes `startTime`, `endTime`, `allowedCalls`, etc.).
+
+- **`agentToPrincipal[agent]`**  
+  Maps an **agent** to its **principal**. One **agent** can only have one **principal**.
+
+- **`principalAgentFunctionSelectors[principal][agent]`**  
+  An array of function selectors that the **agent** is authorized to call for a specific **principal**.
+
+- **`AgentAuthorizationData`**  
+  - **`startTime`**: Timestamp from which the **agent** can invoke the function.  
+  - **`endTime`**: Timestamp after which the **agent** can no longer invoke the function.  
+  - **`allowedCalls`**: How many times the **agent** can invoke the function.  
+  - **`selectorIndex`**: Internal index for quick array management.
+
+- **`BatchAuthorization`**  
+  - Used for batch authorizations.  
+  - Combines the authorization parameters with the **agent**’s **signature**.
+
+### Authorization Lifecycle
+
+1. **Creation**  
+   - **Principal** authorizes **agent**, verifying **agent** signature.  
+   - `allowedCalls > 0` → an active authorization is recorded.
+
+2. **Check on Invocation**  
+   - `onlyRegisteredAgent(_functionSelector)` ensures the call meets all time/usage constraints.
+
+3. **Usage Depletion**  
+   - Each invocation decrements `allowedCalls`.  
+   - If `allowedCalls = 0`, the function authorization is removed.
+
+4. **Revocation**  
+   - **Principal** can revoke an authorization for any function.  
+   - If this was the last function for the **agent**, the **agent**→**principal** link is cleared.
+
+5. **Updates**  
+   - **Principal** can update `startTime`, `endTime`, or `allowedCalls` on existing authorizations.
+
+6. **Batch Updates**  
+   - Multiple updates can be packaged into one transaction for efficiency.
 
 ---
 
-## **Compare to Account Abstraction (AA)**
+## Compare to Account Abstraction (AA)
 
-### **Similarity to AA**  
-The **WORLD3’s WORLD AI Protocol** is conceptually similar to **Account Abstraction (AA)** in that it abstracts away the need for the user’s private key for each on-chain action. Instead, you delegate certain operational permissions to a proxy account (the **agent**).
+1. **Similarity to AA**  
+   - The **WORLD3’s AI Protocol** abstracts away frequent user signatures, empowering an **agent** to act on behalf of the **principal** within strict boundaries.
 
-### **Delegated Permissions vs. Private Keys**  
-In a classic **AA** flow, the user’s contract-based account might need to sign off on every transaction. In **WORLD3’s WORLD AI Protocol**, a **principal** can simply authorize an **agent** for specific tasks without providing ongoing signatures or private key access.
+2. **Delegate Permissions vs. Private Keys**  
+   - Traditional **AA** often relies on a contract-based user wallet.  
+   - **WORLD3** delegates only limited authority to an **agent**, guarded by time bounds, usage limits, and the **agent**’s own consent.
 
-### **Parallel or Combined Use**  
-The **agent** itself can also be an **AA**-based account. This means both the **principal** and the **agent** can take advantage of **AA** features (like multisig, paymaster-based gas costs, etc.).
+3. **Can Be Used in Conjunction**  
+   - The **agent** itself can be an **AA**-style account, benefiting from advanced signing or gas management features.
 
-### **Ideal for AI Automation**  
-In traditional **AA** setups, you might still need the user’s involvement for each transaction unless it’s orchestrated by the contract. With **WORLD3’s WORLD AI Protocol**, you cleanly separate critical operations from mundane tasks, letting **AI** handle trivial functions while the **user** retains full control over wallet assets.
-
-### **Bridging into Existing Projects**  
-By combining **AA** with the **WORLD3 Protocol**, we can potentially bridge any user-facing action in existing deployed contracts. The user’s **AA** contract could manage the overarching signing logic, while the **WORLD3 Protocol** delegates certain function calls to an **agent** for tasks like gaming, yield farming, or off-hours automation.
+4. **Ideal for AI Automation**  
+   - Perfect for letting an AI handle repeated tasks while the **principal** retains final control.
 
 ---
 
-## **Future Roadmap**
+## Future Roadmap
 
 1. **Role-Based Permissions**  
-   - Ability to assign multiple function signatures to a “role” (e.g., “WorkerRole”) and authorize the **agent** once for that role.
+   - Combine multiple function selectors into a named “role” (e.g., “WorkerRole”) for simpler bulk authorizations.
 
-2. **Account Abstraction (AA)**  
-   - Integrate with **AA** to streamline user experience and handle more sophisticated use cases.  
-   - Users could manage advanced logic for signatures and verify them on-chain without externally held keys.
+2. **Enhanced Agent Consent**  
+   - Upgrade to **EIP-712** signatures for a more secure and user-friendly agent approval process.
 
 3. **Gasless Meta-Transactions**  
-   - Provide a meta-transaction flow so **AI agents** do not need to hold ETH/MATIC/etc. for gas.  
-   - Potentially integrate with solutions like **OpenGSN** or chain-native gas relay providers.
+   - Implement relayers so **agents** can operate without needing native gas tokens.
 
-4. **Cross-Chain Compatibility**  
-   - Deploy protocol logic on multiple **EVM** networks, **SUI**, **NEAR**, or other chains, while preserving the same **function-level delegation** concepts.
+4. **Cross-Chain Expansions**  
+   - Extend the protocol to multiple blockchain environments (EVM, Sui, NEAR, Solana, etc.) while retaining function-level delegation logic.
+
+5. **Multi-Call & Batch Ops**  
+   - Further simplify repetitive tasks, especially for AI-driven or script-based workflows.
 
 ---
 
-## **Conclusion**
+## Conclusion
 
-**WORLD3’s WORLD AI Protocol** provides a solid foundation for secure, controlled, and **time-bound delegation** of on-chain operations. By leveraging improved naming conventions, thorough event logging, and an extensible architecture, the protocol caters to a wide variety of use cases—including on-chain games, **DeFi** yield strategies, and **AI-powered** automation.
+The updated **WORLD3’s AI Protocol** provides a **secure**, **time-bound**, and **usage-limited** delegation mechanism that also respects **agent** consent. Its granular approach ensures the **principal** retains strict control while enabling AI-driven or automated workflows to operate within well-defined limits.
 
-Moving forward, we aim to incorporate **role-based permissions**, **account abstraction**, **gasless meta-transactions**, and **multi-call expansions**. These enhancements will make it even simpler for **dApp** developers and end-users to safely delegate tasks, all while retaining strict control over their on-chain assets and data.
-
-
+By **decoupling** the principal’s private keys from repetitive tasks, **WORLD3’s AI Protocol** enables on-chain games, **DeFi** yield strategies, and **AI-powered** automation to run smoothly without compromising security. 
