@@ -177,14 +177,20 @@ TThe generic architecture can be summarized as follows:
    - Perfect for letting an AI handle repeated tasks while the **principal** retains final control.
 
 ---
+## Implementations
+
+### EVM (Ethereum Virtual Machine)
+For detailed implementation instructions and code examples, please refer to the [EVM Implementation Guide](./contracts/evm/README.md).
+
+### Move (SUI) - Work In Progress
+The Move implementation for the SUI blockchain is currently under development. Stay tuned for updates!
+
+---
 
 ## Future Roadmap
 
 1. **Role-Based Permissions**  
    - Combine multiple function selectors into a named “role” (e.g., “WorkerRole”) for simpler bulk authorizations.
-
-2. **Enhanced Agent Consent**  
-   - Upgrade to **EIP-712** signatures for a more secure and user-friendly agent approval process.
 
 3. **Gasless Meta-Transactions**  
    - Implement relayers so **agents** can operate without needing native gas tokens.
