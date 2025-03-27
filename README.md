@@ -1,4 +1,4 @@
-# WORLD3’s AI Protocol – Core Design
+# WORLD3's AI Protocol – Core Design
 
 A flexible on-chain delegation framework that allows **principals** to securely and granularly authorize **agents** (e.g., AI agents or service accounts) to perform specific actions on their behalf—on **any** blockchain platform.
 
@@ -16,7 +16,7 @@ A flexible on-chain delegation framework that allows **principals** to securely 
 ---
 
 ## Overview
-Many decentralized applications (**dApps**) require that users (the **principals**) delegate specific tasks—such as in-game actions, yield-farming steps, or routine administrative functions—to external **agents**. The **WORLD3’s AI Protocol** manages this delegation securely by:
+Many decentralized applications (**dApps**) require that users (the **principals**) delegate specific tasks—such as in-game actions, yield-farming steps, or routine administrative functions—to external **agents**. The **WORLD3's AI Protocol** manages this delegation securely by:
 
 - Restricting **agent** permissions to specific function selectors  
 - Defining **time-bound** and usage-limited delegations  
@@ -39,7 +39,7 @@ By incorporating **granular authorization**, the protocol keeps user assets and 
 
 3. **Time-Bound Access**  
    - Authorizations can have start/end timestamps.  
-   - If either value is zero, it means “no restriction” on that boundary.
+   - If either value is zero, it means "no restriction" on that boundary.
 
 4. **Usage Allowance**  
    - Limits how many times an **agent** can invoke an authorized function.  
@@ -50,7 +50,7 @@ By incorporating **granular authorization**, the protocol keeps user assets and 
    - If no authorized functions remain for an **agent**, the **agent**→**principal** association is cleared.
 
 6. **Easy Revocation & Updates**  
-   - **Principals** can revoke an **agent**’s authorization for a function at any time.  
+   - **Principals** can revoke an **agent**'s authorization for a function at any time.  
    - Partial updates (e.g., adjusting usage limits or time bounds) are possible without re-authorizing from scratch.
 
 7. **Agent Consent via Signature**  
@@ -75,7 +75,7 @@ By incorporating **granular authorization**, the protocol keeps user assets and 
      - The target **function selector** (e.g., `keccak256("myFunction(uint,uint)")`)  
      - **Time bounds** (`_startTime`, `_endTime`)  
      - **Usage allowance** (`_allowedCalls`)  
-     - The **agent**’s **signature** for consent
+     - The **agent**'s **signature** for consent
 
 2. **Data Recorded**  
    - An `AgentAuthorizationData` struct is stored for `(principal, agent, functionSelector)`.  
@@ -90,7 +90,7 @@ By incorporating **granular authorization**, the protocol keeps user assets and 
 
 4. **Automatic Usage Decrement**  
    - Each successful call decrements `allowedCalls`.  
-   - If `allowedCalls` becomes 0, that function’s authorization is automatically removed.
+   - If `allowedCalls` becomes 0, that function's authorization is automatically removed.
 
 5. **Revocation / Removal**  
    - **Principal** can revoke authorization for a given function at any time.  
@@ -134,7 +134,7 @@ TThe generic architecture can be summarized as follows:
 
 - **`BatchAuthorization`**  
   - Used for batch authorizations.  
-  - Combines the authorization parameters with the **agent**’s **signature**.
+  - Combines the authorization parameters with the **agent**'s **signature**.
 
 ### Authorization Lifecycle
 
@@ -164,11 +164,11 @@ TThe generic architecture can be summarized as follows:
 ## Compare to Account Abstraction (AA)
 
 1. **Similarity to AA**  
-   - The **WORLD3’s AI Protocol** abstracts away frequent user signatures, empowering an **agent** to act on behalf of the **principal** within strict boundaries.
+   - The **WORLD3's AI Protocol** abstracts away frequent user signatures, empowering an **agent** to act on behalf of the **principal** within strict boundaries.
 
 2. **Delegate Permissions vs. Private Keys**  
    - Traditional **AA** often relies on a contract-based user wallet.  
-   - **WORLD3** delegates only limited authority to an **agent**, guarded by time bounds, usage limits, and the **agent**’s own consent.
+   - **WORLD3** delegates only limited authority to an **agent**, guarded by time bounds, usage limits, and the **agent**'s own consent.
 
 3. **Can Be Used in Conjunction**  
    - The **agent** itself can be an **AA**-style account, benefiting from advanced signing or gas management features.
@@ -182,15 +182,24 @@ TThe generic architecture can be summarized as follows:
 ### EVM (Ethereum Virtual Machine)
 For detailed implementation instructions and code examples, please refer to the [EVM Implementation Guide](./contracts/evm/README.md).
 
-### Move (SUI) - Work In Progress
-The Move implementation for the SUI blockchain is currently under development. Stay tuned for updates!
+### Move (SUI) Implementation
+The World3 AI Protocol has been implemented for the Sui blockchain using Move. This implementation leverages Sui's unique features including:
+
+- Object-centric architecture with distinct UIDs
+- Shared object model for concurrent access
+- Table-based storage for efficient lookups
+- Granular concurrency for parallel transactions
+- Move's strong type system for security guarantees
+- Per-module registry isolation
+
+For a complete guide to the Sui implementation, see the [Sui Implementation README](contracts/move/sui/README.md) which includes detailed module documentation, usage examples, and a comparison with the EVM version.
 
 ---
 
 ## Future Roadmap
 
 1. **Role-Based Permissions**  
-   - Combine multiple function selectors into a named “role” (e.g., “WorkerRole”) for simpler bulk authorizations.
+   - Combine multiple function selectors into a named "role" (e.g., "WorkerRole") for simpler bulk authorizations.
 
 3. **Gasless Meta-Transactions**  
    - Implement relayers so **agents** can operate without needing native gas tokens.
@@ -205,6 +214,6 @@ The Move implementation for the SUI blockchain is currently under development. S
 
 ## Conclusion
 
-The updated **WORLD3’s AI Protocol** provides a **secure**, **time-bound**, and **usage-limited** delegation mechanism that also respects **agent** consent. Its granular approach ensures the **principal** retains strict control while enabling AI-driven or automated workflows to operate within well-defined limits.
+The updated **WORLD3's AI Protocol** provides a **secure**, **time-bound**, and **usage-limited** delegation mechanism that also respects **agent** consent. Its granular approach ensures the **principal** retains strict control while enabling AI-driven or automated workflows to operate within well-defined limits.
 
-By **decoupling** the principal’s private keys from repetitive tasks, **WORLD3’s AI Protocol** enables on-chain games, **DeFi** yield strategies, and **AI-powered** automation to run smoothly without compromising security. 
+By **decoupling** the principal's private keys from repetitive tasks, **WORLD3's AI Protocol** enables on-chain games, **DeFi** yield strategies, and **AI-powered** automation to run smoothly without compromising security. 

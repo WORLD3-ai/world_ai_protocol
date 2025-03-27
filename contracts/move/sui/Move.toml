@@ -1,0 +1,11 @@
+[package]
+name = "world3_ai_protocol"
+version = "0.0.1"
+authors = ["WORLD3 Protocol"]
+
+[dependencies]
+Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/mainnet" }
+
+[addresses]
+world3_ai_protocol = "0x0"
+sui = "0x2" 
