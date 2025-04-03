@@ -1,4 +1,4 @@
-# 🌐 WORLD3's AI Protocol
+# 🌐 WORLD AI Protocol
 
 A chain-agnostic, secure delegation framework enabling AI Agents to perform autonomous, permissioned on-chain actions across Web3 ecosystems.
 
