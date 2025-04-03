@@ -2,7 +2,7 @@
 
 A chain-agnostic, secure delegation framework enabling AI Agents to perform autonomous, permissioned on-chain actions across Web3 ecosystems.
 
-![WORLD_AI_PROTOCOL_POSTER](https://github.com/user-attachments/assets/d3bda737-7f31-47b6-a2d3-1332af68731f)
+![WORLD_AI_PROTOCOL_POSTER](https://github.com/user-attachments/assets/65b90de0-00aa-4b24-aa27-0e4cfc5db217)
 
 ---
 
