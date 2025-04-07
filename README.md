@@ -110,13 +110,11 @@ By incorporating **granular authorization**, the protocol keeps user assets and 
 
 ---
 
-## 🧱 Protocol Architecture
+## 🧱 Protocol Architecture (Onchain components)
 
 TThe generic architecture can be summarized as follows:
 
-<p align="center">
-    <img height="800px" src="./assets/architecture.png">
-</p>
+![Architecture_flowchart](https://github.com/user-attachments/assets/4a89d5ef-75f0-4444-b1c8-7e5ae15767e8)
 
 
 ### 🗃 Core Mappings & Structs
